@@ -33,14 +33,12 @@ app.use(errorHandler);
 
 const start = async () => {
   await connectToDatabase();
-  // In test mode, drop & recreate tables for a clean schema each run.
-  // In production, apply incremental schema changes instead.
   const isTesting =
     process.env.NODE_ENV === "test" || process.env.TESTING === "true";
   const syncOptions = isTesting ? { force: true } : { alter: true };
   await User.sync(syncOptions);
   await Blog.sync(syncOptions);
-  app.listen(PORT, () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
   });
 };
