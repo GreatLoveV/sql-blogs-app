@@ -1,118 +1,48 @@
-require("dotenv").config();
-const { Sequelize, DataTypes, Model } = require("sequelize");
 const express = require("express");
-
+const {
+  errorHandler,
+  tokenExtractor,
+  userExtractor,
+} = require("./util/middleware");
 const app = express();
+
+const { PORT } = require("./util/config");
+const { connectToDatabase } = require("./util/db");
+
+const blogsRouter = require("./controllers/blogs");
+const usersRouter = require("./controllers/users");
+const loginRouter = require("./controllers/login");
+const authorsRouter = require("./controllers/authors");
+const testingRouter = require("./controllers/testing");
+
+const { Blog, User } = require("./models");
+
 app.use(express.json());
+app.use(tokenExtractor);
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: "postgres",
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
-});
+app.use("/api/blogs", blogsRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/login", loginRouter);
+app.use("/api/authors", authorsRouter);
 
-class Blog extends Model {}
+if (process.env.NODE_ENV === "test" || process.env.TESTING === "true") {
+  app.use("/api/testing", testingRouter);
+}
 
-Blog.init(
-  {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
-    author: {
-      type: DataTypes.TEXT,
-    },
-    url: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
-    title: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
-    likes: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-    },
-  },
-  {
-    sequelize,
-    underscored: true,
-    timestamps: false,
-    modelName: "blog",
-  },
-);
+app.use(errorHandler);
 
-Blog.sync();
+const start = async () => {
+  await connectToDatabase();
+  // In test mode, drop & recreate tables for a clean schema each run.
+  // In production, apply incremental schema changes instead.
+  const isTesting =
+    process.env.NODE_ENV === "test" || process.env.TESTING === "true";
+  const syncOptions = isTesting ? { force: true } : { alter: true };
+  await User.sync(syncOptions);
+  await Blog.sync(syncOptions);
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
 
-app.get("/api/blogs", async (req, res) => {
-  try {
-    const blogs = await Blog.findAll({});
-    return res.status(200).json(blogs);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: error.message });
-  }
-});
-
-app.get("/api/blogs/:id", async (req, res) => {
-  const blog = await Blog.findByPk(req.params.id);
-  if (blog) {
-    return res.status(200).json(blog);
-  } else {
-    return res.status(404).end();
-  }
-});
-
-app.post("/api/blogs", async (req, res) => {
-  try {
-    const blog = await Blog.create(req.body);
-    return res.status(201).json(blog);
-  } catch (error) {
-    return res.status(400).json({ error: error.message });
-  }
-});
-
-app.put("/api/blogs/:id", async (req, res) => {
-  try {
-    const blog = await Blog.findByPk(req.params.id);
-
-    if (!blog) {
-      return res.status(404).json({ error: "Blog not found" });
-    }
-
-    const { author, url, title, likes } = req.body;
-    await blog.update({ author, url, title, likes });
-
-    return res.status(200).json(blog);
-  } catch (error) {
-    return res.status(400).json({ error: error.message });
-  }
-});
-
-app.delete("/api/blogs/:id", async (req, res) => {
-  try {
-    const blog = await Blog.findByPk(req.params.id);
-
-    if (!blog) {
-      return res.status(404).json({ error: "Blog not found" });
-    }
-
-    await blog.destroy();
-
-    res.status(204).end();
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-});
-
-const PORT = process.env.PORT || 3003;
-
-app.listen(PORT, () => {
-  console.log(`Server Running on port ${PORT}`);
-});
+start();
