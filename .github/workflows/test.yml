@@ -37,7 +37,9 @@ jobs:
         run: npm ci
 
       - name: Start application
-        run: npm run start:test > app.log 2>&1 &
+        run: |
+          nohup npm run start:test > app.log 2>&1 &
+          disown
         env:
           TESTING: "true"
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db?sslmode=disable
