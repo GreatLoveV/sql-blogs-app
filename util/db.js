@@ -1,19 +1,14 @@
 const { Sequelize } = require("sequelize");
 const { DATABASE_URL } = require("./config");
 
-// Determine if we should use SSL based on the DATABASE_URL
-const useSSL = DATABASE_URL && !DATABASE_URL.includes("localhost") && !DATABASE_URL.includes("127.0.0.1");
-
 const sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
-  dialectOptions: useSSL
-    ? {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false,
-        },
-      }
-    : {}, // No special SSL options for local connections
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  },
 });
 
 const connectToDatabase = async () => {

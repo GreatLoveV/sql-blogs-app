@@ -1,4 +1,4 @@
-require("dotenv").config({ override: false });
+require("dotenv").config();
 
 module.exports = {
   DATABASE_URL:
