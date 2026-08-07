@@ -3,6 +3,12 @@ const { DATABASE_URL } = require("./config");
 
 const sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  },
 });
 
 const connectToDatabase = async () => {
