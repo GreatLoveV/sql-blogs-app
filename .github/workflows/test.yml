@@ -41,13 +41,12 @@ jobs:
           nohup npm run start:test > app.log 2>&1 &
           disown
         env:
-          TESTING: "true"
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db?sslmode=disable
           PORT: 3001
           SECRET: test_secret
 
       - name: Wait for application to be ready
-        run: npx wait-on http://localhost:3001 -t 60000 -i 1000
+        run: npx wait-on http://localhost:3001 -t 120000 -i 2000
 
       - name: Run tests
         run: npm test
